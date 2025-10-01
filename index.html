@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>—͟͞𝘽𝙞𝙢𝙭𝙮𝙯 𝙤𝙛𝙛𝙞𝙘𝙞𝙖𝙡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <!-- Codemirror -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js"></script>
+  <style>
+    body { margin:0; font-family:sans-serif; background:#121212; color:#ddd; }
+    .header { display:flex; gap:10px; background:#1e1e1e; padding:10px; }
+    button { background:#333; color:#fff; border:none; padding:6px 12px; cursor:pointer; border-radius:5px; }
+    button:hover { background:#555; }
+    .tabs { display:flex; background:#1c1c1c; }
+    .tab { flex:1; padding:8px; text-align:center; cursor:pointer; background:#222; color:#aaa; border:none; }
+    .tab.active { background:#333; font-weight:bold; color:#fff; }
+    .CodeMirror { height:250px; font-size:14px; border-bottom:1px solid #444; }
+    iframe { width:100%; height:300px; background:#fff; border:none; border-top:1px solid #444; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button id="runBtn">▶ RUN</button>
+    <button id="resetBtn">⟳ RESET</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-file="html">index.html</button>
+    <button class="tab" data-file="css">style.css</button>
+    <button class="tab" data-file="js">script.js</button>
+  </div>
+
+  <!-- Editor Area -->
+  <textarea id="htmlCode"></textarea>
+  <textarea id="cssCode" style="display:none"></textarea>
+  <textarea id="jsCode" style="display:none"></textarea>
+
+  <iframe id="output"></iframe>
+
+  <script>
+    // Default code
+    const defaults = {
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <title>Hello World</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Hello World!</h1>
+  <p id="currentTime"></p>
+  <script src="script.js"></scr`+`ipt>
+</body>
+</html>`,
+      css: `body { font-family: Arial; background:#111; color:#fff; }
+h1 { color: cyan; }`,
+      js: `document.getElementById("currentTime").innerText = 
+  "Sekarang: " + new Date().toLocaleTimeString();`
+    };
+
+    // Load saved or default
+    function loadSaved(key) {
+      return localStorage.getItem(key) || defaults[key];
+    }
+
+    // Init CodeMirror (pakai tema dracula)
+    const htmlEditor = CodeMirror.fromTextArea(document.getElementById("htmlCode"), {
+      mode:"xml", theme:"dracula", lineNumbers:true
+    });
+    const cssEditor = CodeMirror.fromTextArea(document.getElementById("cssCode"), {
+      mode:"css", theme:"dracula", lineNumbers:true
+    });
+    const jsEditor = CodeMirror.fromTextArea(document.getElementById("jsCode"), {
+      mode:"javascript", theme:"dracula", lineNumbers:true
+    });
+
+    // Set value dari localStorage / default
+    htmlEditor.setValue(loadSaved("html"));
+    cssEditor.setValue(loadSaved("css"));
+    jsEditor.setValue(loadSaved("js"));
+
+    // Tab switch
+    const tabs = document.querySelectorAll(".tab");
+    const editors = {html:htmlEditor, css:cssEditor, js:jsEditor};
+    tabs.forEach(tab=>{
+      tab.addEventListener("click", ()=>{
+        tabs.forEach(t=>t.classList.remove("active"));
+        tab.classList.add("active");
+        Object.keys(editors).forEach(k=>{
+          editors[k].getWrapperElement().style.display = (k===tab.dataset.file) ? "block" : "none";
+          editors[k].refresh();
+        });
+      });
+    });
+
+    // Run
+    document.getElementById("runBtn").addEventListener("click", ()=>{
+      const html = htmlEditor.getValue();
+      const css  = "<style>"+cssEditor.getValue()+"</style>";
+      const js   = "<script>"+jsEditor.getValue()+"<\/script>";
+      const fullCode = html.replace("</head>", css+"</head>").replace("</body>", js+"</body>");
+      document.getElementById("output").srcdoc = fullCode;
+
+      // Save ke localStorage
+      localStorage.setItem("html", htmlEditor.getValue());
+      localStorage.setItem("css", cssEditor.getValue());
+      localStorage.setItem("js", jsEditor.getValue());
+    });
+
+    // Reset
+    document.getElementById("resetBtn").addEventListener("click", ()=>{
+      htmlEditor.setValue(defaults.html);
+      cssEditor.setValue(defaults.css);
+      jsEditor.setValue(defaults.js);
+      localStorage.clear();
+    });
+
+    // Default tampilan cuma HTML dulu
+    Object.keys(editors).forEach(k=>{
+      editors[k].getWrapperElement().style.display = (k==="html") ? "block" : "none";
+    });
+  </script>
+</body>
+    </html>
